@@ -1,7 +1,7 @@
 ARG RUBY_VERSION=3.4.7
 ARG DATABASE=sqlite
 
-FROM reactor-base:${RUBY_VERSION}-${DATABASE} AS base
+FROM ghcr.io/reactordotdev/reactor-base:${RUBY_VERSION}-${DATABASE} AS base
 
 # Re-declare BUN_VERSION after FROM to make it available in this build stage
 ARG BUN_VERSION=1.3.0
