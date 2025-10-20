@@ -1,0 +1,141 @@
+name: Publish Docker Images
+
+on:
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: "0 0 * * 0" # Run weekly on Sundays at midnight UTC
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  BASE_IMAGE_NAME: ${{ github.repository_owner }}/reactor-base
+  BUILD_IMAGE_NAME: ${{ github.repository_owner }}/reactor-build
+
+jobs:
+  build-and-push-base:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        ruby_version:
+          - version: "3.3.9"
+            series: "3.3"
+          - version: "3.4.6"
+            series: "3.4"
+          - version: "3.4.7"
+            series: "3.4"
+            latest_in_series: true
+        database:
+          - name: sqlite
+            package: sqlite3
+          - name: mysql
+            package: default-mysql-client
+          - name: postgres
+            package: postgresql-client
+
+    outputs:
+      base-images: ${{ steps.output-tags.outputs.base-images }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BASE_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ matrix.ruby_version.version }}-${{ matrix.database.name }}
+            type=raw,value=${{ matrix.ruby_version.series }}-${{ matrix.database.name }},enable=${{ matrix.ruby_version.latest_in_series == true }}
+
+      - name: Build and push base Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./base.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            RUBY_VERSION=${{ matrix.ruby_version.version }}
+            DATABASE=${{ matrix.database.package }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Output base image tags
+        id: output-tags
+        run: |
+          echo "base-images=${{ steps.meta.outputs.tags }}" >> $GITHUB_OUTPUT
+
+  build-and-push-build:
+    runs-on: ubuntu-latest
+    needs: build-and-push-base
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        ruby_version:
+          - version: "3.4.7"
+            series: "3.4"
+            latest_in_series: true
+        database:
+          - name: sqlite
+            package: sqlite
+        bun_version:
+          - "1.3.0"
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.BUILD_IMAGE_NAME }}
+          tags: |
+            type=raw,value=${{ matrix.ruby_version.version }}-bun-${{ matrix.bun_version }}-${{ matrix.database.name }}
+            type=raw,value=${{ matrix.ruby_version.series }}-bun-${{ matrix.bun_version }}-${{ matrix.database.name }},enable=${{ matrix.ruby_version.latest_in_series == true }}
+
+      - name: Build and push build Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./build.Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            RUBY_VERSION=${{ matrix.ruby_version.version }}
+            DATABASE=${{ matrix.database.name }}
+            BUN_VERSION=${{ matrix.bun_version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
