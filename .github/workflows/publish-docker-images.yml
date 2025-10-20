@@ -81,7 +81,11 @@ jobs:
       - name: Output base image tags
         id: output-tags
         run: |
-          echo "base-images=${{ steps.meta.outputs.tags }}" >> $GITHUB_OUTPUT
+          {
+            echo 'base-images<<EOF'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo EOF
+          } >> $GITHUB_OUTPUT
 
   build-and-push-build:
     runs-on: ubuntu-latest
