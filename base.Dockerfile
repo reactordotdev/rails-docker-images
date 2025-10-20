@@ -16,7 +16,7 @@ FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 # Rails app lives here
 WORKDIR /rails
 
-RUN --mount=type=cache,target=/var/cache/apt,id=apt-cache \
+RUN --mount=type=cache,target=/var/cache/apt,id=apt-cache-$TARGETARCH \
     apt-get update && apt-get install -y --no-install-recommends \
     curl libjemalloc2 libvips ${DATABASE} && \
     rm -rf /var/lib/apt/lists/*
