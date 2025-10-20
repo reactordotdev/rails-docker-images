@@ -11,7 +11,7 @@ The project provides two types of Docker images:
 
 ## Image Types
 
-### Base Images (`ghcr.io/[owner]/reactor-base`)
+### Base Images (`ghcr.io/reactordotdev/reactor-base`)
 
 Lightweight production-ready images containing:
 - Ruby runtime (versions 3.3.9, 3.4.6, 3.4.7)
@@ -19,7 +19,7 @@ Lightweight production-ready images containing:
 - Essential system libraries (libjemalloc2, libvips)
 - Optimized for production deployments
 
-### Build Images (`ghcr.io/[owner]/reactor-build`)
+### Build Images (`ghcr.io/reactordotdev/reactor-build`)
 
 Development and CI/CD images extending base images with:
 - Build tools (build-essential, git, pkg-config)
@@ -44,7 +44,7 @@ Development and CI/CD images extending base images with:
 ### Using Base Images
 
 ```dockerfile
-FROM ghcr.io/[owner]/reactor-base:3.4.7-sqlite
+FROM ghcr.io/reactordotdev/reactor-base:3.4.7-sqlite
 
 WORKDIR /app
 COPY . .
@@ -57,7 +57,7 @@ CMD ["bundle", "exec", "rails", "server"]
 ### Using Build Images
 
 ```dockerfile
-FROM ghcr.io/[owner]/reactor-build:3.4.7-bun-1.3.0-sqlite
+FROM ghcr.io/reactordotdev/reactor-build:3.4.7-bun-1.3.0-sqlite
 
 WORKDIR /app
 COPY . .
@@ -180,7 +180,7 @@ Environment variables set in build images:
 Create a test container:
 
 ```bash
-docker run --rm -it ghcr.io/[owner]/reactor-build:3.4.7-bun-1.3.0-sqlite bash
+docker run --rm -it ghcr.io/reactordotdev/reactor-build:3.4.7-bun-1.3.0-sqlite bash
 
 # Inside container
 ruby --version
