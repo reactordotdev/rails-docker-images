@@ -13,6 +13,9 @@ ARG DATABASE=sqlite3
 
 FROM docker.io/library/ruby:$RUBY_VERSION-slim AS base
 
+# Make TARGETARCH available for cache ID
+ARG TARGETARCH
+
 # Rails app lives here
 WORKDIR /rails
 
